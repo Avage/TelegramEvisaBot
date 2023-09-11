@@ -1,0 +1,62 @@
+{
+  "single": [
+    {
+      "price": 100,
+      "currency": "USD",
+      "duration": "48 Hours",
+      "title": "Single Entry, 48 Hours",
+      "description": "Connecting Flight Air Ticket Required Processing Time 2 to 4 working days",
+      "code": "1000"
+    },
+    {
+      "price": 140,
+      "currency": "USD",
+      "duration": "96 Hours",
+      "title": "Single Entry, 96 Hours",
+      "description": "Connecting Flight Air Ticket Required Processing Time 2 to 4 working days",
+      "code": "1001"
+    },
+    {
+      "price": 155,
+      "currency": "USD",
+      "duration": "10 Days",
+      "title": "Single Entry, 10 Days",
+      "description": "Processing Time 2 to 4 working days plus 5 USD cashback",
+      "code": "1002"
+    },
+    {
+      "price": 180,
+      "currency": "USD",
+      "duration": "30 Days",
+      "title": "Single Entry, 30 Days",
+      "description": "Processing Time 2 to 4 working days plus 10 USD cashback",
+      "code": "1003"
+    },
+    {
+      "price": 325,
+      "currency": "USD",
+      "duration": "60 Days",
+      "title": "Single Entry, 60 Days",
+      "description": "Processing Time 2 to 4 working days plus 10 USD cashback",
+      "code": "1004"
+    }
+  ],
+  "multiple": [
+    {
+      "price": 390,
+      "currency": "USD",
+      "duration": "30 Days",
+      "title": "Multiple Entry, 30 Days",
+      "description": "Processing Time 2 to 4 working days plus 10 USD cashback",
+      "code": "2000"
+    },
+    {
+      "price": 490,
+      "currency": "USD",
+      "duration": "60 Days",
+      "title": "Multiple Entry, 60 Days",
+      "description": "Processing Time 2 to 4 working days plus 10 USD cashback",
+      "code": "2001"
+    }
+  ]
+}
