@@ -26,11 +26,19 @@ def send_card_payment(bot, db, call):
     item = next(
         (dic for dic in var_extractor.get_config_var("single" if code[0] == "1" else "multiple") if
          dic['code'] == code), None)
-    bot.send_invoice(call.message.chat.id, title=item["title"], description=item["description"],
-                     invoice_payload=item["code"],
-                     provider_token=var_extractor.get_env_var("STRIPE_INVOICE_TOKEN"),
-                     currency=item["currency"],
-                     prices=[types.LabeledPrice(item["title"], item["price"] * 100)])
+    row_id = db.add_payment(call.from_user, "card", item["price"], item["currency"])
+    if row_id:
+        bot.send_invoice(call.message.chat.id, title=item["title"], description=item["description"],
+                         invoice_payload=row_id,
+                         provider_token=var_extractor.get_env_var("STRIPE_INVOICE_TOKEN"),
+                         currency=item["currency"],
+                         prices=[types.LabeledPrice(item["title"], item["price"] * 100)],
+                         )
+    else:
+        bot.send_message(call.message.chat.id, msg(db.get_lg(call.from_user), 'went_wrong_message'),
+                         parse_mode='Markdown')
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
+                         f"Error: Can't add card payment to database.\n\nUser: {call.from_user}")
 
 
 def send_crypto_payment(bot, db, call):
@@ -38,31 +46,40 @@ def send_crypto_payment(bot, db, call):
     item = next(
         (dic for dic in var_extractor.get_config_var("single" if code[0] == "1" else "multiple") if
          dic['code'] == code), None)
-    resp = payment.get_pay_link(item["currency"], item["price"], call.message.chat.id)
-    if resp.startswith("Error"):
-        bot.send_message(var_extractor.get_env_var("ADMIN_ID"), resp)
+    row_id = db.add_payment(call.from_user, "crypto", item["price"], item["currency"])
+    if row_id:
+        resp = payment.get_pay_link(item["currency"], item["price"], call.message.chat.id, row_id)
+        if resp.startswith("Error"):
+            bot.send_message(var_extractor.get_env_var("ADMIN_ID"), f"Can't get crypto payment link.\n\n{resp}")
+            bot.send_message(call.message.chat.id, msg(db.get_lg(call.from_user), 'went_wrong_message'),
+                             parse_mode='Markdown')
+        else:
+            bot.send_message(call.message.chat.id,
+                             msg(db.get_lg(call.from_user), 'crypto_link_message') + f"\n\n{resp}",
+                             parse_mode='Markdown')
+    else:
         bot.send_message(call.message.chat.id, msg(db.get_lg(call.from_user), 'went_wrong_message'),
                          parse_mode='Markdown')
-    else:
-        bot.send_message(call.message.chat.id, msg(db.get_lg(call.from_user), 'crypto_link_message') + f"\n\n{resp}",
-                         parse_mode='Markdown')
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
+                         f"Error: Can't add crypto payment to database.\n\nUser: {call.from_user}")
 
 
 def successful_card_payment(bot, db, message):
-    if db.add_card_payment(message.content_type, message.from_user, message.successful_payment):
+    if db.make_paid(message.successful_payment.invoice_payload, message.successful_payment.telegram_payment_charge_id,
+                    message.successful_payment.provider_payment_charge_id):
         bot.send_message(message.chat.id, msg(db.get_lg(message.from_user), 'success_payment_message'),
                          parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, msg(db.get_lg(message.from_user), 'payment_error_message'),
                          parse_mode='Markdown')
         bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
-                         f"Error: Can't add card to database.\n\nUser: {message.from_user}")
+                         f"Error: Can't change payment to Paid in database.\n\nUser: {message.from_user}")
 
 
 def successful_crypto_payment(bot, db, call):
-    if db.add_crypto_payment(call.data, call.from_user, call.message.successful_payment):
+    if db.make_paid(call.payload.customData, service_invoice_id=call.payload.id):
         bot.send_message(call.chat.id, msg(db.get_lg(call.from_user), 'success_payment_message'), parse_mode='Markdown')
     else:
         bot.send_message(call.chat.id, msg(db.get_lg(call.from_user), 'payment_error_message'), parse_mode='Markdown')
         bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
-                         f"Error: Can't add crypto to database.\n\nUser: {call.from_user}")
+                         f"Error: Can't change payment to Paid in database.\n\nUser: {call.from_user}")

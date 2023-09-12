@@ -4,13 +4,13 @@ def add_user(conn, user):
         c.execute(
             "INSERT INTO users (id, username, firstname, language, last_command, visa_code, passport_name, "
             "passport_surname, passport_number, passport_birthday, passport_photo, passport_scan, "
-            "passport_photo_msg_id, passport_scan_msg_id)"
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "passport_photo_msg_id, passport_scan_msg_id, msg_id)"
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (user.id, None, None, user.language_code, "start", None, None, None, None, None, None,
-             None, None, None))
+             None, None, None, None))
         conn.commit()
         c.execute(f"UPDATE users SET username = ('%s') WHERE id = {user.id}" % user.username)
-        c.execute(f"UPDATE users SET firstname = ('%s') WHERE id = {user.id}" % user.username)
+        c.execute(f"UPDATE users SET firstname = ('%s') WHERE id = {user.id}" % user.first_name)
         conn.commit()
         return True
     except Exception as err:

@@ -1,7 +1,7 @@
 from telebot import telebot, types
 from src.database import db
 from src.utils import var_extractor
-from src.bot import settings, visas, details, payment
+from src.bot import settings, visas, details, payment, helper, contact
 from src.utils.var_extractor import get_messages_var as msg
 
 
@@ -12,9 +12,13 @@ class Bot:
 
         self.set_webhook()
 
-        @self.bot.message_handler(commands=['start', 'hello'])
+        @self.bot.message_handler(commands=['start'])
         def set_menu(message):
             self.set_menu(message)
+
+        @self.bot.message_handler(commands=['help'])
+        def set_help(message):
+            self.set_help(message)
 
         @self.bot.message_handler(func=lambda msg: True)
         def get_message(message):
@@ -50,8 +54,9 @@ class Bot:
         if not self.user_db.user_exist(message.chat):
             start_button = types.InlineKeyboardButton(msg('en', 'start_button'), callback_data='start')
             settings_button = types.InlineKeyboardButton(msg('en', 'settings_button'), callback_data='settings')
+            help_button = types.InlineKeyboardButton(msg('en', 'help_button'), callback_data='help')
             keyboard = types.InlineKeyboardMarkup()
-            keyboard.add(start_button, settings_button, row_width=1)
+            keyboard.add(settings_button, help_button, start_button, row_width=2)
             self.bot.send_message(message.chat.id, msg('en', 'welcome_message'), reply_markup=keyboard,
                                   parse_mode='Markdown')
             if not self.user_db.add_user(message.from_user):
@@ -62,11 +67,16 @@ class Bot:
                                                       callback_data='start')
             settings_button = types.InlineKeyboardButton(msg(self.user_db.get_lg(message.chat), 'settings_button'),
                                                          callback_data='settings')
+            help_button = types.InlineKeyboardButton(msg(self.user_db.get_lg(message.chat), 'help_button'),
+                                                     callback_data='help')
             keyboard = types.InlineKeyboardMarkup()
-            keyboard.add(start_button, settings_button, row_width=1)
+            keyboard.add(settings_button, help_button, start_button, row_width=2)
             self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'welcome_message'),
                                   reply_markup=keyboard,
                                   parse_mode='Markdown')
+
+    def set_help(self, call):
+        contact.send_help_menu(self.bot, self.user_db, call)
 
     def send_fail_message(self, call):
         self.bot.send_message(call.message.chat.id, msg(self.user_db.get_lg(call.from_user), 'went_wrong_message'),
@@ -78,10 +88,28 @@ class Bot:
     def callback_query(self, call):
         data = call.data
         if data == "menu":
-            self.set_menu(call.message)
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "menu"):
+                self.set_menu(call.message)
+            else:
+                self.send_fail_message(call)
+        elif data == "help":
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "help"):
+                self.set_help(call.message)
+            else:
+                self.send_fail_message(call)
         elif data == "settings":
             if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "settings"):
                 settings.send_settings(self.bot, self.user_db, call)
+            else:
+                self.send_fail_message(call)
+        elif data == "faq":
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "faq"):
+                contact.send_faq(self.bot, self.user_db, call)
+            else:
+                self.send_fail_message(call)
+        elif data == "admin":
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "admin"):
+                contact.send_contact(self.bot, self.user_db, call)
             else:
                 self.send_fail_message(call)
         elif data == "language":
@@ -133,23 +161,33 @@ class Bot:
 
     def get_message(self, message):
         atr = self.user_db.get_user_info_with_atr(message.from_user, "last_command")
-        if atr == "get_name":
-            details.get_last_name(self.bot, self.user_db, message)
-        elif atr == "get_last_name":
-            details.get_passport_number(self.bot, self.user_db, message)
-        elif atr == "get_passport_number":
-            details.get_passport_birthday(self.bot, self.user_db, message)
-        elif atr == "get_passport_birthday":
-            details.get_passport_photo(self.bot, self.user_db, message)
-        elif atr == "get_passport_photo":
-            self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'get_passport_photo_again'),
-                                  parse_mode='Markdown')
-        elif atr == "get_passport_scan":
-            self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'get_passport_scan_again'),
-                                  parse_mode='Markdown')
+        valid = helper.check_msg_validity(message)
+        if atr in ["get_name", "get_last_name", "get_passport_number", "get_passport_birthday"]:
+            if valid:
+                if atr == "get_name":
+                    details.get_last_name(self.bot, self.user_db, message)
+                elif atr == "get_last_name":
+                    details.get_passport_number(self.bot, self.user_db, message)
+                elif atr == "get_passport_number":
+                    details.get_passport_birthday(self.bot, self.user_db, message)
+                elif atr == "get_passport_birthday":
+                    details.get_passport_photo(self.bot, self.user_db, message)
+            else:
+                self.bot.send_message(message.chat.id,
+                                      msg(self.user_db.get_lg(message.chat), 'get_invalid_information'),
+                                      parse_mode='Markdown')
         else:
-            self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'unrecognized_message'),
-                                  parse_mode='Markdown')
+            if atr == "get_passport_photo":
+                self.bot.send_message(message.chat.id,
+                                      msg(self.user_db.get_lg(message.chat), 'get_passport_photo_again'),
+                                      parse_mode='Markdown')
+            elif atr == "get_passport_scan":
+                self.bot.send_message(message.chat.id,
+                                      msg(self.user_db.get_lg(message.chat), 'get_passport_scan_again'),
+                                      parse_mode='Markdown')
+            else:
+                self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'unrecognized_message'),
+                                      parse_mode='Markdown')
 
     def get_photo(self, message):
         atr = self.user_db.get_user_info_with_atr(message.from_user, "last_command")
@@ -158,7 +196,7 @@ class Bot:
         elif atr == "get_passport_scan":
             details.confirm_details(self.bot, self.user_db, message)
         else:
-            self.bot.send_message(message.chat.id, "*Sorry, something went wrong. Please try again later.*",
+            self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'went_wrong_message'),
                                   parse_mode='Markdown')
 
     def pre_checkout_query(self, query):

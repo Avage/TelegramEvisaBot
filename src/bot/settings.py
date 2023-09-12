@@ -22,8 +22,10 @@ def send_language_settings(bot, db, call):
 
 def change_language(bot, db, call):
     if db.update_user_info_with_atr(call.from_user, "language", call.data):
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(types.InlineKeyboardButton(msg(db.get_lg(call.from_user), 'menu_button'), callback_data='menu'))
         bot.send_message(call.message.chat.id, msg(db.get_lg(call.from_user), 'language_selected_message'),
-                         parse_mode='Markdown')
+                         reply_markup=keyboard, parse_mode='Markdown')
     else:
         bot.send_message(call.message.chat.id, msg(db.get_lg(call.from_user), 'went_wrong_message'),
                          parse_mode='Markdown')

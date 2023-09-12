@@ -106,9 +106,19 @@ def send_to_chat(bot, db, call):
     birthday = db.get_user_info_with_atr(call.from_user, "passport_birthday")
     portrait = db.get_user_info_with_atr(call.from_user, "passport_photo_msg_id")
     scan = db.get_user_info_with_atr(call.from_user, "passport_scan_msg_id")
-    bot.send_message(var_extractor.get_env_var("GROUP_ID"),
-                     f"*User id - {call.from_user.id}\n\nVisa Name - {product_name}\n\nName - {name}\nSurname - {surname}"
-                     f"\nPassport Number - {number}\nBirthday - {birthday}*", parse_mode='Markdown',
-                     disable_notification=True)
-    bot.forward_message(var_extractor.get_env_var("GROUP_ID"), call.from_user.id, portrait, disable_notification=True)
-    bot.forward_message(var_extractor.get_env_var("GROUP_ID"), call.from_user.id, scan, disable_notification=True)
+    message_id = bot.send_message(var_extractor.get_env_var("GROUP_ID"),
+                                  f"*User id - {call.from_user.id}\n\nVisa Name - {product_name}\n\nName - {name}\n"
+                                  f"Surname - {surname}\nPassport Number - {number}\nBirthday - {birthday}*",
+                                  parse_mode='Markdown',
+                                  disable_notification=True).message_id
+    fwd1_id = bot.forward_message(var_extractor.get_env_var("GROUP_ID"), call.from_user.id, portrait,
+                                  disable_notification=True).message_id
+    fwd2_id = bot.forward_message(var_extractor.get_env_var("GROUP_ID"), call.from_user.id, scan,
+                                  disable_notification=True).message_id
+    if db.update_user_info_with_atr(call.from_user, "msg_id", message_id) and \
+            db.update_user_info_with_atr(call.from_user, "passport_photo_msg_id", fwd1_id) and \
+            db.update_user_info_with_atr(call.from_user, "passport_scan_msg_id", fwd2_id):
+        pass
+    else:
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
+                         f"Error: Can't add message ids to database.\n\nUser: {call.from_user.id}")

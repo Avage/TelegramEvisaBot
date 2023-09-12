@@ -5,7 +5,7 @@ import hmac
 from src.utils import var_extractor
 
 
-def get_pay_link(currency, price, buyer_id):
+def get_pay_link(currency, price, buyer_id, row_id):
     headers = {
         'Wpay-Store-Api-Key': var_extractor.get_env_var("WALLET_APY_KEY"),
         'Content-Type': 'application/json',
@@ -21,6 +21,7 @@ def get_pay_link(currency, price, buyer_id):
         'externalId': var_extractor.get_env_var("EXTERNAL_ID"),  # Invoice ID for payment in your bot
         'timeoutSeconds': 60 * 60 * 24,  # Invoice lifetime in seconds
         'customerTelegramUserId': buyer_id,
+        'customData': row_id,
         'returnUrl': 'https://t.me/DubaiEvisaBot',
         'failReturnUrl': 'https://t.me/wallet',
     }
