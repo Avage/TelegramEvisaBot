@@ -54,3 +54,6 @@ class db:
 
     def make_paid(self, row_id, tg_invoice_id=None, service_invoice_id=None):
         return payment.make_paid(self.conn, row_id, tg_invoice_id, service_invoice_id)
+
+    def send_payment(self, row_id):
+        return payment.send_payment(self.conn, row_id)

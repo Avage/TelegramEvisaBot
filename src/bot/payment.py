@@ -69,6 +69,18 @@ def successful_card_payment(bot, db, message):
                     message.successful_payment.provider_payment_charge_id):
         bot.send_message(message.chat.id, msg(db.get_lg(message.from_user), 'success_payment_message'),
                          parse_mode='Markdown')
+        ids = db.send_payment(message.successful_payment.invoice_payload)
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"), "🆕🆕🆕🆕🆕🆕", disable_notification=True)
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"), f"PaymentData: {message.successful_payment}")
+        if ids:
+            for msg_id in ids:
+                bot.forward_message(var_extractor.get_env_var("ADMIN_ID"), var_extractor.get_env_var("GROUP_ID"),
+                                    msg_id)
+            bot.send_message(var_extractor.get_env_var("ADMIN_ID"), "🆕🆕🆕🆕🆕🆕", disable_notification=True)
+        else:
+            bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
+                             f"Error: Can't send payment message to admin.\n\nUser: {message.from_user}")
+
     else:
         bot.send_message(message.chat.id, msg(db.get_lg(message.from_user), 'payment_error_message'),
                          parse_mode='Markdown')
@@ -78,8 +90,21 @@ def successful_card_payment(bot, db, message):
 
 def successful_crypto_payment(bot, db, call):
     if db.make_paid(call.payload.customData, service_invoice_id=call.payload.id):
-        bot.send_message(call.chat.id, msg(db.get_lg(call.from_user), 'success_payment_message'), parse_mode='Markdown')
+        bot.send_message(call.chat.id, msg(db.get_lg(call.from_user), 'success_payment_message'),
+                         parse_mode='Markdown')
+        ids = db.send_payment(call.payload.customData)
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"), "🆕🆕🆕🆕🆕🆕", disable_notification=True)
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"), f"PaymentData: {call}")
+        if ids:
+            for msg_id in ids:
+                bot.forward_message(var_extractor.get_env_var("ADMIN_ID"), var_extractor.get_env_var("GROUP_ID"),
+                                    msg_id)
+            bot.send_message(var_extractor.get_env_var("ADMIN_ID"), "🆕🆕🆕🆕🆕🆕", disable_notification=True)
+        else:
+            bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
+                             f"Error: Can't send payment message to admin.\n\nUser: {call.from_user}")
     else:
-        bot.send_message(call.chat.id, msg(db.get_lg(call.from_user), 'payment_error_message'), parse_mode='Markdown')
+        bot.send_message(call.chat.id, msg(db.get_lg(call.from_user), 'payment_error_message'),
+                         parse_mode='Markdown')
         bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
                          f"Error: Can't change payment to Paid in database.\n\nUser: {call.from_user}")

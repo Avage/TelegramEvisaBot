@@ -32,6 +32,19 @@ def make_paid(conn, row_id, tg_invoice_id, service_invoice_id):
         print('Cause: {}'.format(err))
         return False
 
+
+def send_payment(conn, row_id):
+    try:
+        c = conn.cursor()
+        c.execute(f"UPDATE payments SET send_to_admin={True} WHERE id = {row_id}")
+        c.execute(f"SELECT msg_id, passport_photo_msg_id, passport_scan_msg_id FROM payments WHERE id = {row_id}")
+        ids = c.fetchone()
+        conn.commit()
+        return ids
+    except Exception as err:
+        print('Cause: {}'.format(err))
+        return False
+
 # def add_card_payment(conn, content, user, payment):
 #     try:
 #         c = conn.cursor()
