@@ -45,6 +45,32 @@ def send_payment(conn, row_id):
         print('Cause: {}'.format(err))
         return False
 
+
+def payment_exist(conn, row_id):
+    try:
+        c = conn.cursor()
+        c.execute(f"SELECT id FROM payments WHERE id = {row_id}")
+        if c.fetchone():
+            return True
+        else:
+            return False
+    except Exception as err:
+        print('Cause: {}'.format(err))
+        return False
+
+
+def get_payment_info(conn, row_id):
+    try:
+        c = conn.cursor()
+        c.execute(
+            f"SELECT user_id, paid, visa_code, payment, price, currency, telegram_invoice_id, service_invoice_id, "
+            f"passport_name, passport_surname, passport_number, passport_birthday, passport_photo, passport_scan, "
+            f"date_time FROM payments WHERE id = {row_id}")
+        return c.fetchone()
+    except Exception as err:
+        print('Cause: {}'.format(err))
+        return False
+
 # def add_card_payment(conn, content, user, payment):
 #     try:
 #         c = conn.cursor()

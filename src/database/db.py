@@ -34,11 +34,17 @@ class db:
     def user_exist(self, usr):
         return user.user_exist(self.conn, usr)
 
+    def user_exist_by_id(self, usr_id):
+        return user.user_exist_by_id(self.conn, usr_id)
+
     def get_lg(self, usr):
         return user.get_lg(self.conn, usr)
 
     def get_user_info_with_atr(self, usr, atr):
         return user.get_user_info_with_atr(self.conn, usr, atr)
+
+    def get_all_info(self, usr):
+        return user.get_all_info(self.conn, usr)
 
     def update_user_info_with_atr(self, usr, atr, new_value):
         return user.update_user_info_with_atr(self.conn, usr, atr, new_value)
@@ -57,3 +63,9 @@ class db:
 
     def send_payment(self, row_id):
         return payment.send_payment(self.conn, row_id)
+
+    def payment_exist(self, row_id):
+        return payment.payment_exist(self.conn, row_id)
+
+    def get_payment_info(self, row_id):
+        return payment.get_payment_info(self.conn, row_id)

@@ -107,7 +107,7 @@ def send_to_chat(bot, db, call):
     portrait = db.get_user_info_with_atr(call.from_user, "passport_photo_msg_id")
     scan = db.get_user_info_with_atr(call.from_user, "passport_scan_msg_id")
     message_id = bot.send_message(var_extractor.get_env_var("GROUP_ID"),
-                                  f"*User id - {call.from_user.id}\n\nVisa Name - {product_name}\n\nName - {name}\n"
+                                  f"*User ID - {call.from_user.id}\n\nVisa Name - {product_name}\n\nName - {name}\n"
                                   f"Surname - {surname}\nPassport Number - {number}\nBirthday - {birthday}*",
                                   parse_mode='Markdown',
                                   disable_notification=True).message_id

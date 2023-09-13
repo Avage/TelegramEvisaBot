@@ -71,7 +71,9 @@ def successful_card_payment(bot, db, message):
                          parse_mode='Markdown')
         ids = db.send_payment(message.successful_payment.invoice_payload)
         bot.send_message(var_extractor.get_env_var("ADMIN_ID"), "🆕🆕🆕🆕🆕🆕", disable_notification=True)
-        bot.send_message(var_extractor.get_env_var("ADMIN_ID"), f"PaymentData: {message.successful_payment}")
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
+                         f"*Payment ID - {message.successful_payment.invoice_payload}\n\nPaymentData: "
+                         f"{message.successful_payment}*", parse_mode="Markdown")
         if ids:
             for msg_id in ids:
                 bot.forward_message(var_extractor.get_env_var("ADMIN_ID"), var_extractor.get_env_var("GROUP_ID"),
@@ -94,7 +96,8 @@ def successful_crypto_payment(bot, db, call):
                          parse_mode='Markdown')
         ids = db.send_payment(call.payload.customData)
         bot.send_message(var_extractor.get_env_var("ADMIN_ID"), "🆕🆕🆕🆕🆕🆕", disable_notification=True)
-        bot.send_message(var_extractor.get_env_var("ADMIN_ID"), f"PaymentData: {call}")
+        bot.send_message(var_extractor.get_env_var("ADMIN_ID"),
+                         f"*Payment ID - {call.payload.customData}\n\nPaymentData: {call}*", parse_mode="Markdown")
         if ids:
             for msg_id in ids:
                 bot.forward_message(var_extractor.get_env_var("ADMIN_ID"), var_extractor.get_env_var("GROUP_ID"),

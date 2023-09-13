@@ -1,7 +1,7 @@
 from telebot import telebot, types
 from src.database import db
 from src.utils import var_extractor
-from src.bot import settings, visas, details, payment, helper, contact
+from src.bot import settings, visas, details, payment, helper, contact, admin
 from src.utils.var_extractor import get_messages_var as msg
 
 
@@ -20,6 +20,10 @@ class Bot:
         def set_help(message):
             self.set_help(message)
 
+        @self.bot.message_handler(commands=['admin'])
+        def set_admin(message):
+            self.set_admin(message)
+
         @self.bot.message_handler(func=lambda msg: True)
         def get_message(message):
             self.get_message(message)
@@ -27,6 +31,10 @@ class Bot:
         @self.bot.message_handler(content_types=['photo'])
         def get_photo(message):
             self.get_photo(message)
+
+        @self.bot.message_handler(content_types=['document'])
+        def get_pdf(message):
+            self.get_pdf(message)
 
         @self.bot.callback_query_handler(func=lambda call: True)
         def callback_query(call):
@@ -52,31 +60,31 @@ class Bot:
 
     def set_menu(self, message):
         if not self.user_db.user_exist(message.chat):
-            start_button = types.InlineKeyboardButton(msg('en', 'start_button'), callback_data='start')
-            settings_button = types.InlineKeyboardButton(msg('en', 'settings_button'), callback_data='settings')
-            help_button = types.InlineKeyboardButton(msg('en', 'help_button'), callback_data='help')
-            keyboard = types.InlineKeyboardMarkup()
-            keyboard.add(settings_button, help_button, start_button, row_width=2)
-            self.bot.send_message(message.chat.id, msg('en', 'welcome_message'), reply_markup=keyboard,
-                                  parse_mode='Markdown')
             if not self.user_db.add_user(message.from_user):
                 self.bot.send_message(message.chat.id, msg('en', 'went_wrong_message'), parse_mode='Markdown')
                 self.send_error_to_admin(f"Error: Can't add user to database.\n\nUser: {message.chat.id}")
-        else:
-            start_button = types.InlineKeyboardButton(msg(self.user_db.get_lg(message.chat), 'start_button'),
-                                                      callback_data='start')
-            settings_button = types.InlineKeyboardButton(msg(self.user_db.get_lg(message.chat), 'settings_button'),
-                                                         callback_data='settings')
-            help_button = types.InlineKeyboardButton(msg(self.user_db.get_lg(message.chat), 'help_button'),
-                                                     callback_data='help')
-            keyboard = types.InlineKeyboardMarkup()
-            keyboard.add(settings_button, help_button, start_button, row_width=2)
-            self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'welcome_message'),
-                                  reply_markup=keyboard,
-                                  parse_mode='Markdown')
+        start_button = types.InlineKeyboardButton(msg(self.user_db.get_lg(message.chat), 'start_button'),
+                                                  callback_data='start')
+        settings_button = types.InlineKeyboardButton(msg(self.user_db.get_lg(message.chat), 'settings_button'),
+                                                     callback_data='settings')
+        help_button = types.InlineKeyboardButton(msg(self.user_db.get_lg(message.chat), 'help_button'),
+                                                 callback_data='help')
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(settings_button, help_button, start_button, row_width=2)
+        self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'welcome_message'),
+                              reply_markup=keyboard,
+                              parse_mode='Markdown')
 
     def set_help(self, call):
         contact.send_help_menu(self.bot, self.user_db, call)
+
+    def set_admin(self, message):
+        if str(message.from_user.id) == var_extractor.get_env_var("ADMIN_ID"):
+            self.user_db.update_user_info_with_atr(message.from_user, "last_command", "admin_panel")
+            admin.send_admin_menu(self.bot, message)
+        else:
+            self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'unrecognized_message'),
+                                  parse_mode='Markdown')
 
     def send_fail_message(self, call):
         self.bot.send_message(call.message.chat.id, msg(self.user_db.get_lg(call.from_user), 'went_wrong_message'),
@@ -87,6 +95,7 @@ class Bot:
 
     def callback_query(self, call):
         data = call.data
+        is_admin = str(call.from_user.id) == var_extractor.get_env_var("ADMIN_ID")
         if data == "menu":
             if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "menu"):
                 self.set_menu(call.message)
@@ -107,8 +116,8 @@ class Bot:
                 contact.send_faq(self.bot, self.user_db, call)
             else:
                 self.send_fail_message(call)
-        elif data == "admin":
-            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "admin"):
+        elif data == "contact_admin":
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "contact_admin"):
                 contact.send_contact(self.bot, self.user_db, call)
             else:
                 self.send_fail_message(call)
@@ -158,6 +167,26 @@ class Bot:
                 payment.send_crypto_payment(self.bot, self.user_db, call)
             else:
                 self.send_fail_message(call)
+        elif data == "admin" and is_admin:
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "admin_panel"):
+                admin.send_admin_menu(self.bot, call.message)
+            else:
+                self.send_fail_message(call)
+        elif data == "admin_send_visa" and is_admin:
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "admin_send_visa"):
+                admin.get_user_id(self.bot, call)
+            else:
+                self.send_fail_message(call)
+        elif data == "admin_get_user_info" and is_admin:
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "admin_get_user_info"):
+                admin.get_user_id(self.bot, call)
+            else:
+                self.send_fail_message(call)
+        elif data == "admin_get_payment_info" and is_admin:
+            if self.user_db.update_user_info_with_atr(call.from_user, "last_command", "admin_get_payment_info"):
+                admin.get_payment_id(self.bot, call)
+            else:
+                self.send_fail_message(call)
 
     def get_message(self, message):
         atr = self.user_db.get_user_info_with_atr(message.from_user, "last_command")
@@ -185,6 +214,14 @@ class Bot:
                 self.bot.send_message(message.chat.id,
                                       msg(self.user_db.get_lg(message.chat), 'get_passport_scan_again'),
                                       parse_mode='Markdown')
+            elif ((atr == "admin_send_visa" or atr == "admin_get_user_info" or atr == "admin_get_payment_info") and
+                  str(message.from_user.id) == var_extractor.get_env_var("ADMIN_ID")):
+                if atr == "admin_send_visa":
+                    admin.send_visa(self.bot, message)
+                elif atr == "admin_get_user_info":
+                    admin.get_user(self.bot, self.user_db, message)
+                elif atr == "admin_get_payment_info":
+                    admin.get_payment_info(self.bot, self.user_db, message)
             else:
                 self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'unrecognized_message'),
                                       parse_mode='Markdown')
@@ -198,6 +235,11 @@ class Bot:
         else:
             self.bot.send_message(message.chat.id, msg(self.user_db.get_lg(message.chat), 'went_wrong_message'),
                                   parse_mode='Markdown')
+
+    def get_pdf(self, message):
+        atr = self.user_db.get_user_info_with_atr(message.from_user, "last_command")
+        if atr == "admin_send_visa" and str(message.from_user.id) == var_extractor.get_env_var("ADMIN_ID"):
+            admin.forward_to_user(self.bot, message)
 
     def pre_checkout_query(self, query):
         self.bot.answer_pre_checkout_query(query.id, ok=True)

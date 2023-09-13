@@ -31,6 +31,19 @@ def user_exist(conn, user):
         return False
 
 
+def user_exist_by_id(conn, user_id):
+    try:
+        c = conn.cursor()
+        c.execute(f"SELECT id FROM users WHERE id = {user_id}")
+        if c.fetchone():
+            return True
+        else:
+            return False
+    except Exception as err:
+        print('Cause: {}'.format(err))
+        return False
+
+
 def get_lg(conn, user):
     try:
         c = conn.cursor()
@@ -46,6 +59,16 @@ def get_user_info_with_atr(conn, user, atr):
         c = conn.cursor()
         c.execute(f"SELECT (%s) FROM users where id = {user.id}" % atr)
         return c.fetchone()[0]
+    except Exception as err:
+        print('Cause: {}'.format(err))
+        return None
+
+
+def get_all_info(conn, user_id):
+    try:
+        c = conn.cursor()
+        c.execute(f"SELECT id, username, firstname, language FROM users where id = {user_id}")
+        return c.fetchone()
     except Exception as err:
         print('Cause: {}'.format(err))
         return None
