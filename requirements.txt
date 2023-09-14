@@ -1,4 +1,4 @@
-python-dotenv
-pyTelegramBotAPI
-flask
-requests
+python-dotenv==1.0.0
+pyTelegramBotAPI==4.13.0
+flask==2.3.3
+requests==2.31.0
